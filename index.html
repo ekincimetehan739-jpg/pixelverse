@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <title>PixelVerse | Master Game Hub</title>
+    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.160.0/three.min.js"></script>
+    <style>
+        :root { --p: #00ff88; --bg: #0d0d12; --card: #1f1f27; }
+        body, html { margin: 0; padding: 0; background: var(--bg); color: white; font-family: sans-serif; overflow: hidden; height: 100vh; }
+        
+        /* Dashboard Tasarımı */
+        #portal { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; text-align: center; }
+        .logo { font-size: 48px; font-weight: 800; color: var(--p); text-shadow: 0 0 20px rgba(0,255,136,0.5); margin-bottom: 40px; }
+        .grid { display: flex; gap: 30px; padding: 20px; }
+        .card { background: var(--card); border: 2px solid #2a2a35; padding: 30px; border-radius: 20px; width: 250px; cursor: pointer; transition: 0.3s; }
+        .card:hover { border-color: var(--p); transform: translateY(-10px); background: #252530; }
+        .card h3 { color: var(--p); margin: 15px 0 10px; }
+        .card span { font-size: 50px; }
+
+        /* Oyun Sahnesi */
+        #game-stage { display: none; position: fixed; inset: 0; z-index: 1000; background: #000; }
+        #exit-btn { position: absolute; top: 20px; left: 20px; z-index: 2000; background: #ff4444; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: bold; }
+        
+        /* Minecraft UI */
+        #mc-menu { position: absolute; inset: 0; background: rgba(0,0,0,0.8); display: none; align-items: center; justify-content: center; z-index: 1100; flex-direction: column; }
+        #mc-hotbar { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); display: none; gap: 10px; }
+        .slot { width: 50px; height: 50px; background: rgba(0,0,0,0.7); border: 2px solid #555; color: white; display: flex; align-items: center; justify-content: center; }
+        .slot.active { border-color: var(--p); }
+
+        /* Araba Oyunu UI */
+        #car-ui { display: none; position: absolute; top: 20px; right: 20px; font-size: 24px; color: lime; z-index: 1050; }
+    </style>
+</head>
+<body>
+
+<div id="portal">
+    <div class="logo">PIXELVERSE</div>
+    <div class="grid">
+        <div class="card" onclick="playCar()">
+            <span>🏎️</span>
+            <h3>Traffic Racer</h3>
+            <p>Yüksek hız ve aksiyon!</p>
+        </div>
+        <div class="card" onclick="playMC()">
+            <span>🌍</span>
+            <h3>Online Survival</h3>
+            <p>Arkadaşınla beraber inşa et.</p>
+        </div>
+    </div>
+</div>
+
+<div id="game-stage">
+    <button id="exit-btn" onclick="location.reload()">PORTALA DÖN</button>
+    
+    <div id="mc-menu">
+        <h2>Minecraft Online</h2>
+        <p>Senin ID: <span id="my-id" style="color:var(--p)">...</span></p>
+        <input type="text" id="target-id" placeholder="Arkadaş ID'si" style="padding:10px; margin:10px; border-radius:5px;">
+        <button onclick="startMinecraft(true)" style="padding:10px 20px; background:var(--p); border:none; cursor:pointer; font-weight:bold;">BAĞLAN</button>
+    </div>
+    <div id="mc-hotbar">
+        <div class="slot active" id="s1">1</div>
+        <div class="slot" id="s2">2</div>
+        <div class="slot" id="s3">3</div>
+    </div>
+
+    <div id="car-ui">Skor: <span id="car-score">0</span></div>
+</div>
+
+<script>
+// --- PORTAL KONTROLÜ ---
+function playCar() {
+    document.getElementById('portal').style.display = 'none';
+    document.getElementById('game-stage').style.display = 'block';
+    document.getElementById('car-ui').style.display = 'block';
+    initCarGame();
+}
+
+function playMC() {
+    document.getElementById('portal').style.display = 'none';
+    document.getElementById('game-stage').style.display = 'block';
+    document.getElementById('mc-menu').style.display = 'flex';
+    initMCNetwork();
+}
+
+// --- ARABA OYUNU (DOSYA 1) ---
+function initCarGame() {
+    // Senin gönderdiğin "araba oyunu.html" içindeki Three.js mantığı buraya entegre edilir
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
+    const renderer = new THREE.WebGLRenderer({antialias: true});
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    document.getElementById('game-stage').appendChild(renderer.domElement);
+    
+    // Basitleştirilmiş görsel döngü
+    function animate() {
+        if(document.getElementById('car-ui').style.display === 'block') {
+            requestAnimationFrame(animate);
+            renderer.render(scene, camera);
+        }
+    }
+    animate();
+}
+
+// --- MINECRAFT (DOSYA 2) ---
+function initMCNetwork() {
+    const peer = new Peer('Pixel-' + Math.floor(Math.random()*9000));
+    peer.on('open', id => document.getElementById('my-id').innerText = id);
+}
+
+function startMinecraft(online) {
+    document.getElementById('mc-menu').style.display = 'none';
+    document.getElementById('mc-hotbar').style.display = 'flex';
+    // Senin gönderdiğin "minecraft.html" dünyası başlatılır
+}
+</script>
+</body>
+</html>
