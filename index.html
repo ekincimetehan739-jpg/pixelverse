@@ -2,217 +2,207 @@
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
-    <title>PixelVerse | Pro Gaming Hub</title>
+    <title>PixelVerse | Full Survival & Racing</title>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.160.0/three.min.js"></script>
     <style>
-        :root { --p: #00ff88; --bg: #0d0d12; --card: #1f1f27; }
+        :root { --p: #00ff88; --bg: #0d0d12; }
         body, html { margin: 0; padding: 0; background: var(--bg); color: white; font-family: 'Segoe UI', sans-serif; overflow: hidden; height: 100vh; }
+        #portal { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; }
+        .grid { display: flex; gap: 20px; }
+        .card { background: #1f1f27; border: 2px solid #2a2a35; padding: 20px; border-radius: 15px; width: 220px; cursor: pointer; text-align: center; transition: 0.3s; }
+        .card:hover { border-color: var(--p); transform: translateY(-5px); }
         
-        /* Dashboard */
-        #portal { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; transition: 0.5s; }
-        .logo { font-size: 50px; font-weight: 800; color: var(--p); text-shadow: 0 0 20px rgba(0,255,136,0.3); margin-bottom: 40px; }
-        .grid { display: flex; gap: 30px; flex-wrap: wrap; justify-content: center; }
-        .card { background: var(--card); border: 2px solid #2a2a35; padding: 30px; border-radius: 20px; width: 260px; cursor: pointer; transition: 0.4s; text-align: center; }
-        .card:hover { border-color: var(--p); transform: translateY(-10px); box-shadow: 0 10px 30px rgba(0,255,136,0.2); }
-        .card h3 { color: var(--p); margin: 15px 0 5px; }
-        .card p { font-size: 14px; opacity: 0.7; }
-        .icon { font-size: 60px; }
-
-        /* Oyun Sahnesi */
-        #game-container { display: none; position: fixed; inset: 0; z-index: 1000; background: #000; }
-        #exit-btn { position: absolute; top: 20px; left: 20px; z-index: 5000; background: #ff4444; color: white; border: none; padding: 12px 20px; border-radius: 8px; cursor: pointer; font-weight: bold; }
+        #game-view { display: none; position: fixed; inset: 0; z-index: 100; }
+        #ui-layer { position: absolute; inset: 0; pointer-events: none; z-index: 200; }
+        #ui-layer * { pointer-events: auto; }
         
-        /* Minecraft UI */
-        #mc-ui { position: absolute; inset: 0; background: rgba(0,0,0,0.85); display: none; align-items: center; justify-content: center; flex-direction: column; z-index: 2000; }
-        #mc-hotbar { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); display: none; gap: 10px; z-index: 1500; }
-        .slot { width: 50px; height: 50px; background: rgba(0,0,0,0.8); border: 2px solid #555; display: flex; align-items: center; justify-content: center; color: white; border-radius: 8px; }
+        .hud { position: absolute; top: 20px; left: 20px; color: var(--p); font-size: 20px; font-weight: bold; text-shadow: 2px 2px black; }
+        #crosshair { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: white; font-size: 24px; display: none; }
+        #hotbar { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); display: none; gap: 8px; }
+        .slot { width: 50px; height: 50px; background: rgba(0,0,0,0.7); border: 2px solid #555; display: flex; align-items: center; justify-content: center; color: white; border-radius: 5px; }
         .slot.active { border-color: var(--p); background: rgba(0,255,136,0.2); }
-        #mc-crosshair { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: white; font-size: 24px; display: none; pointer-events: none; z-index: 1500; }
-
-        /* Araba Oyunu UI */
-        #car-hud { display: none; position: absolute; top: 80px; left: 20px; z-index: 1500; }
-        .stat { background: rgba(0,0,0,0.6); padding: 10px 20px; border-radius: 10px; border-left: 4px solid var(--p); margin-bottom: 10px; font-size: 20px; }
-        #speed-box { width: 200px; height: 10px; background: #333; border-radius: 5px; overflow: hidden; }
-        #speed-bar { height: 100%; width: 0%; background: var(--p); transition: 0.1s; }
+        
+        #mc-menu { position: absolute; inset: 0; background: rgba(0,0,0,0.8); display: none; align-items: center; justify-content: center; flex-direction: column; }
+        .btn-exit { position: absolute; top: 20px; right: 20px; background: #ff4444; border: none; padding: 10px 20px; color: white; border-radius: 5px; cursor: pointer; }
     </style>
 </head>
 <body>
 
 <div id="portal">
-    <div class="logo">PIXELVERSE</div>
+    <h1 style="color:var(--p)">PIXELVERSE</h1>
     <div class="grid">
-        <div class="card" onclick="startCarGame()">
-            <div class="icon">🏎️</div>
-            <h3>Traffic Racer</h3>
-            <p>Makas at, araçları patlat ve hızın tadını çıkar!</p>
-        </div>
-        <div class="card" onclick="startMCGame()">
-            <div class="icon">🌍</div>
-            <h3>Online Survival</h3>
-            <p>Arkadaşınla bağlan ve hayalindeki dünyayı kur.</p>
-        </div>
+        <div class="card" onclick="initGame('car')"><h3>🏎️ Traffic Racer</h3><p>Arabalar ve Hız!</p></div>
+        <div class="card" onclick="initGame('mc')"><h3>🌍 Minecraft Online</h3><p>İnşa et ve Kır!</p></div>
     </div>
 </div>
 
-<div id="game-container">
-    <button id="exit-btn" onclick="location.reload()">🏠 PORTALA DÖN</button>
-    
-    <div id="car-hud">
-        <div class="stat">Skor: <span id="c-score">0</span></div>
-        <div id="speed-box"><div id="speed-bar"></div></div>
-    </div>
-
-    <div id="mc-ui">
-        <h2 style="color:var(--p)">Minecraft Online</h2>
-        <div style="margin-bottom:20px">ID'n: <b id="my-id">Yükleniyor...</b></div>
-        <input type="text" id="target-id" placeholder="Arkadaş ID'sini gir" style="padding:12px; border-radius:8px; border:none; width:250px; margin-bottom:10px;">
-        <br>
-        <button onclick="mcConnect(true)" style="background:var(--p); border:none; padding:12px 30px; border-radius:8px; font-weight:bold; cursor:pointer;">DÜNYAYA KATIL</button>
-        <button onclick="mcConnect(false)" style="background:#444; color:white; border:none; padding:12px 30px; border-radius:8px; margin-left:10px; cursor:pointer;">TEK OYNA</button>
-    </div>
-    <div id="mc-crosshair">+</div>
-    <div id="mc-hotbar">
-        <div class="slot active" id="sl1">1</div>
-        <div class="slot" id="sl2">2</div>
-        <div class="slot" id="sl3">3</div>
+<div id="game-view">
+    <button class="btn-exit" onclick="location.reload()">🏠 ÇIKIŞ</button>
+    <div id="ui-layer">
+        <div id="car-hud" class="hud" style="display:none">Skor: <span id="c-score">0</span></div>
+        <div id="mc-menu">
+            <h2 style="color:var(--p)">Minecraft Online</h2>
+            <p id="my-id-text">ID Alınıyor...</p>
+            <input type="text" id="target-id" placeholder="Arkadaş ID'si" style="padding:10px; border-radius:5px; border:none; width:200px; margin-bottom:10px;">
+            <button onclick="startMC(true)" style="background:var(--p); padding:10px 20px; border:none; cursor:pointer; font-weight:bold;">BAĞLAN</button>
+            <button onclick="startMC(false)" style="margin-left:5px; padding:10px 20px; cursor:pointer;">TEK OYNA</button>
+        </div>
+        <div id="crosshair">+</div>
+        <div id="hotbar">
+            <div class="slot active" id="s1">Taş</div>
+            <div class="slot" id="s2">Odun</div>
+            <div class="slot" id="s3">Yaprak</div>
+        </div>
     </div>
 </div>
 
 <script>
-let scene, camera, renderer, activeGame = null;
+let scene, camera, renderer, activeGame = null, worldBlocks = [], traffic = [], bullets = [];
+let keys = {}, raycaster = new THREE.Raycaster();
 
-// --- 🏎️ ARABA OYUNU MANTIĞI ---
-function startCarGame() {
-    activeGame = 'car';
+function initGame(type) {
+    activeGame = type;
     document.getElementById('portal').style.display = 'none';
-    document.getElementById('game-container').style.display = 'block';
-    document.getElementById('car-hud').style.display = 'block';
-
+    document.getElementById('game-view').style.display = 'block';
+    
     scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x87CEEB);
-    camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-    camera.position.set(0, 4, 8);
+    camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
     renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setSize(window.innerWidth, window.innerHeight);
-    document.getElementById('game-container').appendChild(renderer.domElement);
+    document.getElementById('game-view').appendChild(renderer.domElement);
 
-    const light = new THREE.DirectionalLight(0xffffff, 1);
-    light.position.set(10, 20, 10); scene.add(light);
-    scene.add(new THREE.AmbientLight(0xffffff, 0.5));
+    if(type === 'car') setupCar();
+    else setupMC();
+}
 
-    // Yol
-    const road = new THREE.Mesh(new THREE.PlaneGeometry(8, 2000), new THREE.MeshPhongMaterial({ color: 0x333333 }));
-    road.rotation.x = -Math.PI / 2; scene.add(road);
+// --- 🏎️ TRAFFIC RACER SİSTEMİ (FULL) ---
+function setupCar() {
+    document.getElementById('car-hud').style.display = 'block';
+    scene.background = new THREE.Color(0x87CEEB);
+    scene.add(new THREE.AmbientLight(0xffffff, 0.6));
+    const sun = new THREE.DirectionalLight(0xffffff, 1); sun.position.set(5,20,5); scene.add(sun);
 
-    // Araba Oluşturucu
-    function createCar(color) {
-        const car = new THREE.Group();
-        const body = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.5, 3), new THREE.MeshPhongMaterial({ color }));
-        body.position.y = 0.5; car.add(body);
-        const cabin = new THREE.Mesh(new THREE.BoxGeometry(1, 0.4, 1.5), new THREE.MeshPhongMaterial({ color: 0xaaaaaa }));
-        cabin.position.y = 0.9; car.add(cabin);
-        return car;
+    const road = new THREE.Mesh(new THREE.PlaneGeometry(10, 2000), new THREE.MeshPhongMaterial({color: 0x333333}));
+    road.rotation.x = -Math.PI/2; scene.add(road);
+
+    const player = new THREE.Group();
+    const body = new THREE.Mesh(new THREE.BoxGeometry(1.4, 0.6, 2.8), new THREE.MeshPhongMaterial({color: 0x00ff00}));
+    body.position.y = 0.5; player.add(body);
+    scene.add(player);
+
+    function spawnTraffic() {
+        const t = new THREE.Mesh(new THREE.BoxGeometry(1.4, 0.6, 2.8), new THREE.MeshPhongMaterial({color: 0xff4444}));
+        t.position.set((Math.random()-0.5)*7, 0.5, player.position.z - 100);
+        scene.add(t); traffic.push(t);
     }
+    setInterval(() => { if(activeGame === 'car') spawnTraffic(); }, 1500);
 
-    const player = createCar(0x00ff00); scene.add(player);
-    let speed = 0.2, score = 0, traffic = [];
-    let keys = {};
-    window.onkeydown = e => keys[e.code] = true;
-    window.onkeyup = e => keys[e.code] = false;
-
-    function animate() {
+    let speed = 0.4;
+    function loop() {
         if(activeGame !== 'car') return;
-        requestAnimationFrame(animate);
-        
-        if(keys['KeyW']) speed = Math.min(speed + 0.01, 1.2); else speed = Math.max(speed - 0.01, 0.2);
-        if(keys['KeyA'] && player.position.x > -3.5) player.position.x -= 0.08;
-        if(keys['KeyD'] && player.position.x < 3.5) player.position.x += 0.08;
-
-        document.getElementById('speed-bar').style.width = (speed/1.2 * 100) + "%";
-        score += speed; document.getElementById('c-score').innerText = Math.floor(score);
-
-        camera.position.lerp(new THREE.Vector3(player.position.x, 4, player.position.z + 8), 0.1);
+        requestAnimationFrame(loop);
+        if(keys['KeyA'] && player.position.x > -4) player.position.x -= 0.1;
+        if(keys['KeyD'] && player.position.x < 4) player.position.x += 0.1;
+        player.position.z -= speed;
+        camera.position.set(player.position.x, 4, player.position.z + 8);
         camera.lookAt(player.position);
+        
+        traffic.forEach(t => { 
+            t.position.z += 0.2; 
+            if(player.position.distanceTo(t.position) < 2) { location.reload(); alert("Kaza Yaptın!"); }
+        });
+
         renderer.render(scene, camera);
     }
-    animate();
+    loop();
 }
 
-// --- 🌍 MINECRAFT OYUNU MANTIĞI ---
-function startMCGame() {
-    activeGame = 'mc';
-    document.getElementById('portal').style.display = 'none';
-    document.getElementById('game-container').style.display = 'block';
-    document.getElementById('mc-ui').style.display = 'flex';
-
-    const peer = new Peer('Pixel-' + Math.floor(Math.random() * 9000 + 1000));
-    peer.on('open', id => document.getElementById('my-id').innerText = id);
-    window.mcPeer = peer;
+// --- 🌍 MINECRAFT SİSTEMİ (FULL) ---
+function setupMC() {
+    document.getElementById('mc-menu').style.display = 'flex';
+    const peer = new Peer('PX-' + Math.floor(Math.random()*9000));
+    peer.on('open', id => document.getElementById('my-id-text').innerText = "ID: " + id);
 }
 
-function mcConnect(isOnline) {
-    document.getElementById('mc-ui').style.display = 'none';
-    document.getElementById('mc-crosshair').style.display = 'block';
-    document.getElementById('mc-hotbar').style.display = 'flex';
+const BLOCK_TYPES = { 1: 0x808080, 2: 0x5d4037, 3: 0x228b22 };
+let selectedB = 1;
+
+function startMC(online) {
+    document.getElementById('mc-menu').style.display = 'none';
+    document.getElementById('crosshair').style.display = 'block';
+    document.getElementById('hotbar').style.display = 'flex';
     document.body.requestPointerLock();
-
-    scene = new THREE.Scene();
+    
     scene.background = new THREE.Color(0x87ceeb);
-    camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-    camera.rotation.order = 'YXZ';
-    renderer = new THREE.WebGLRenderer({ antialias: true });
-    renderer.setSize(window.innerWidth, window.innerHeight);
-    document.getElementById('game-container').appendChild(renderer.domElement);
-
     scene.add(new THREE.AmbientLight(0xffffff, 0.8));
-    const sun = new THREE.DirectionalLight(0xffffff, 1);
-    sun.position.set(10, 20, 10); scene.add(sun);
+    camera.rotation.order = 'YXZ';
 
-    const worldBlocks = [];
-    const addBlock = (x, y, z, color) => {
-        const b = new THREE.Mesh(new THREE.BoxGeometry(1, 1, 1), new THREE.MeshStandardMaterial({ color }));
-        b.position.set(x, y, z); scene.add(b); worldBlocks.push(b);
+    const addB = (x,y,z,c) => {
+        const b = new THREE.Mesh(new THREE.BoxGeometry(1,1,1), new THREE.MeshStandardMaterial({color:c}));
+        b.position.set(x,y,z); scene.add(b); worldBlocks.push(b);
     };
 
-    // Zemin
-    for(let x=-10; x<10; x++) for(let z=-10; z<10; z++) addBlock(x, 0, z, 0x4caf50);
-
-    let keys = {}, yaw = 0, pitch = 0;
-    window.onkeydown = e => keys[e.code] = true;
-    window.onkeyup = e => keys[e.code] = false;
-    window.onmousemove = e => {
-        if(document.pointerLockElement) {
-            yaw -= e.movementX * 0.002; pitch -= e.movementY * 0.002;
-            pitch = Math.max(-1.5, Math.min(1.5, pitch));
-            camera.rotation.set(pitch, yaw, 0);
+    // Zemin ve Ağaçlar
+    for(let x=-15; x<15; x++) {
+        for(let z=-15; z<15; z++) {
+            addB(x,0,z, 0x4caf50);
+            if(Math.random() > 0.98) { // Ağaç
+                for(let h=1; h<4; h++) addB(x, h, z, 0x5d4037);
+                for(let lx=-1; lx<2; lx++) for(let lz=-1; lz<2; lz++) addB(x+lx, 4, z+lz, 0x228b22);
+            }
         }
-    };
+    }
 
-    function animate() {
+    window.addEventListener('mousedown', (e) => {
+        if(!document.pointerLockElement) return;
+        raycaster.setFromCamera(new THREE.Vector2(), camera);
+        const hits = raycaster.intersectObjects(worldBlocks);
+        if(hits.length > 0 && hits[0].distance < 6) {
+            if(e.button === 0) { // Kır
+                scene.remove(hits[0].object);
+                worldBlocks = worldBlocks.filter(b => b !== hits[0].object);
+            } else { // Koy
+                const p = hits[0].object.position.clone().add(hits[0].face.normal);
+                addB(p.x, p.y, p.z, BLOCK_TYPES[selectedB]);
+            }
+        }
+    });
+
+    let yaw=0, pitch=0;
+    window.onmousemove = e => { if(document.pointerLockElement){ 
+        yaw-=e.movementX*0.002; pitch-=e.movementY*0.002; 
+        pitch=Math.max(-1.5, Math.min(1.5, pitch));
+        camera.rotation.set(pitch, yaw, 0);
+    }};
+
+    function loop() {
         if(activeGame !== 'mc') return;
-        requestAnimationFrame(animate);
+        requestAnimationFrame(loop);
         if(document.pointerLockElement) {
-            const speed = 0.12;
-            if(keys['KeyW']) camera.translateZ(-speed);
-            if(keys['KeyS']) camera.translateZ(speed);
-            if(keys['KeyA']) camera.translateX(-speed);
-            if(keys['KeyD']) camera.translateX(speed);
+            const s = 0.15;
+            if(keys['KeyW']) camera.translateZ(-s);
+            if(keys['KeyS']) camera.translateZ(s);
+            if(keys['KeyA']) camera.translateX(-s);
+            if(keys['KeyD']) camera.translateX(s);
             camera.position.y = 1.8;
         }
         renderer.render(scene, camera);
     }
-    animate();
+    loop();
 }
 
-// Pencere Boyutu Ayarı
-window.addEventListener('resize', () => {
-    if(renderer) {
-        camera.aspect = window.innerWidth / window.innerHeight;
-        camera.updateProjectionMatrix();
-        renderer.setSize(window.innerWidth, window.innerHeight);
-    }
-});
+window.onkeydown = e => { 
+    keys[e.code] = true; 
+    if(e.code === 'Digit1') { selectedB = 1; updateHB(0); }
+    if(e.code === 'Digit2') { selectedB = 2; updateHB(1); }
+    if(e.code === 'Digit3') { selectedB = 3; updateHB(2); }
+};
+window.onkeyup = e => keys[e.code] = false;
+function updateHB(idx) { 
+    document.querySelectorAll('.slot').forEach((s, i) => s.classList.toggle('active', i === idx)); 
+}
+window.oncontextmenu = e => e.preventDefault();
 </script>
 </body>
 </html>
